@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:extended_phone_number_input/models/country.dart';
 import 'package:extended_phone_number_input/utils/number_converter.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttercontactpicker/fluttercontactpicker.dart';
+import 'package:flutter_native_contact_picker/flutter_native_contact_picker.dart';
+import 'package:flutter_native_contact_picker/model/contact.dart';
 import 'package:phone_numbers_parser/phone_numbers_parser.dart' as parserNumber;
 
 import 'models/countries_list.dart';
@@ -91,16 +90,12 @@ class PhoneNumberInputController extends ChangeNotifier {
 
     return _visibleCountries
         .where((element) =>
-            element.dialCode.contains(_searchKey) ||
-            element.code.contains(_searchKey.toUpperCase()) ||
-            element.name.contains(_searchKey))
+            element.dialCode.contains(_searchKey) || element.code.contains(_searchKey.toUpperCase()) || element.name.contains(_searchKey))
         .toList();
   }
 
   Country getCountryByDialCode(String dialCode) {
-    return getCountries.firstWhere(
-        (country) => country.dialCode.replaceFirst('+', '') == dialCode,
-        orElse: () {
+    return getCountries.firstWhere((country) => country.dialCode.replaceFirst('+', '') == dialCode, orElse: () {
       if (_onUnsupportedCountrySelected != null) {
         _onUnsupportedCountrySelected!(dialCode);
       }
@@ -109,8 +104,7 @@ class PhoneNumberInputController extends ChangeNotifier {
   }
 
   Country getCountryByCountryCode(String countryCode) {
-    return getCountries.firstWhere((country) => country.code == countryCode,
-        orElse: () {
+    return getCountries.firstWhere((country) => country.code == countryCode, orElse: () {
       return _selectedCountry;
     });
   }
@@ -122,8 +116,7 @@ class PhoneNumberInputController extends ChangeNotifier {
     } else {
       try {
         final englishNumber = arabicNumberConverter(phoneNumber);
-        final phoneInfo =
-            getPhoneNumberInfo('${_selectedCountry.dialCode}$englishNumber');
+        final phoneInfo = getPhoneNumberInfo('${_selectedCountry.dialCode}$englishNumber');
         final isValid = phoneInfo.validate();
         _isValid = isValid;
         if (!isValid) {
@@ -154,25 +147,12 @@ class PhoneNumberInputController extends ChangeNotifier {
         phoneNumber = _initialPhoneNumber!;
       }
       if (_excludeCountries != null && _includeCountries != null) {
-        assert(false,
-            'you can not use include & exclude at the same time.. choose one at most');
+        assert(false, 'you can not use include & exclude at the same time.. choose one at most');
       }
       if (_includeCountries != null) {
-        _visibleCountries = [
-          ..._countries
-              .where((country) => _includeCountries!
-                  .map((e) => e.toUpperCase())
-                  .contains(country.code))
-              .toList()
-        ];
+        _visibleCountries = [..._countries.where((country) => _includeCountries!.map((e) => e.toUpperCase()).contains(country.code)).toList()];
       } else if (_excludeCountries != null) {
-        _visibleCountries = [
-          ..._countries
-              .where((country) => !_excludeCountries!
-                  .map((e) => e.toUpperCase())
-                  .contains(country.code))
-              .toList()
-        ];
+        _visibleCountries = [..._countries.where((country) => !_excludeCountries!.map((e) => e.toUpperCase()).contains(country.code)).toList()];
       }
 
       notifyListeners();
@@ -183,12 +163,9 @@ class PhoneNumberInputController extends ChangeNotifier {
 
   Future<void> pickFromContacts() async {
     try {
-      if (!await FlutterContactPicker.hasPermission() && Platform.isAndroid) {
-        await FlutterContactPicker.requestPermission();
-      }
-      final PhoneContact contact =
-          await FlutterContactPicker.pickPhoneContact();
-      final String? number = contact.phoneNumber?.number;
+      FlutterNativeContactPicker _contactPicker = FlutterNativeContactPicker();
+      final Contact? contact = await _contactPicker.selectContact();
+      final String? number = contact?.phoneNumbers?.first;
       if (number != null) {
         phoneNumber = number.replaceAll(' ', '');
       }
